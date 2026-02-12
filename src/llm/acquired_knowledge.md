@@ -86,3 +86,8 @@ Es un **man-in-the-middle pasivo**: solo observa, no modifica paquetes. Es útil
 - No se puede **modificar** paquetes en tránsito (es solo lectura).
 - Para captura y logging simple de datos serie, un script Python con `pyserial` es más práctico y legible.
 - La correspondencia entre interfaz USBPcap y controlador USB físico no siempre es obvia — hay que probar.
+
+## Sinergia con VitalRecorder
+
+VitalRecorder es un software que permite grabar los datos del monitor IntelliVue en formato vital. 
+Este software posee protocolos de comunicación con el monitor IntelliVue que permiten la grabación de datos de varios monitores. De forma sinergica con el anterior se puede inspeccionar el tráfico de datos serie entre el monitor y el PC para reconocer el patrón de comunicación y crear un protocolo de comunicación con los diferentes monitores.
