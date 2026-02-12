@@ -293,7 +293,7 @@ class PipelineWizard:
             print("6. Advanced / God   (Crypto, Fuzz, CRC)")
             print("7. Production       (Universal Logger)")
             print("8. Documentation    (Generate Spec)")
-            print("9. AUTO-PILOT (Adaptive)")
+            print("9. Auto-Pilot heuristics (Adaptive)")
             print("10. Gwi-ma Agent (Interactive AI)")
             print("11. IntelliVue Live Monitor (Standalone)")
             print("12. Run Tests (Verification)")
