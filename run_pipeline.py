@@ -283,7 +283,7 @@ class PipelineWizard:
     def main_menu(self):
         while True:
             print(f"\n{'='*40}")
-            print("   VitalParser Reverse Engineering Suite   ")
+            print("   Gwi-ma v0.1.0 Reverse Engineering Suite   ")
             print(f"{'='*40}")
             print("1. Discovery        (Scanner, Baud)")
             print("2. Acquisition      (Logger)")
@@ -294,11 +294,12 @@ class PipelineWizard:
             print("7. Production       (Universal Logger)")
             print("8. Documentation    (Generate Spec)")
             print("9. AUTO-PILOT (Adaptive)")
-            print("10. DeepSeek Agent (AI Autonomous)")
+            print("10. Gwi-ma Agent (Interactive AI)")
             print("11. IntelliVue Live Monitor (Standalone)")
+            print("12. Run Tests (Verification)")
             print("0. Exit")
             
-            c = input("\nSelect Phase (0-11): ")
+            c = input("\nSelect Phase (0-12): ")
             
             if c == '1': self.phase_discovery()
             elif c == '2': self.phase_acquisition()
@@ -317,6 +318,8 @@ class PipelineWizard:
                 port = self.select_serial_port()
                 # Run the standalone script in root
                 self.run_cmd("IntelliVue Monitor", f"python intellivue_monitor.py {port}")
+            elif c == '12':
+                self.run_cmd("Core Tests", "python tests/test_gwi_ma_core.py")
             elif c == '0': sys.exit()
 
 if __name__ == "__main__":
