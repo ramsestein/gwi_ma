@@ -88,3 +88,7 @@ Use these tools by outputting the corresponding JSON function call.
 - **update_knowledge**
   - *Description*: Saves finding to long-term memory.
   - *Arguments*: "<fact_string>"
+- **generate_protocol**
+  - *Description*: Saves final protocol definition to `results/`.
+  - *Arguments*: "<filename> <json_string>"
+

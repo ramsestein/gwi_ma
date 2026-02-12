@@ -58,7 +58,8 @@ class DeepSeekAgent:
             'timing_analyzer': 'utils.timing_analyzer',
             'web_search': 'utils.web_client search',
             'web_read': 'utils.web_client read',
-            'update_knowledge': 'llm.knowledge_manager update'
+            'update_knowledge': 'llm.knowledge_manager update',
+            'generate_protocol': 'llm.protocol_generator'
         }
 
     def _load_api_key(self):
