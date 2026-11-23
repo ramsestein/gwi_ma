@@ -32,7 +32,8 @@ class DeepSeekAgent:
             'data_logger': 'acquisition.data_logger',
             'universal_logger': 'acquisition.universal_logger',
             'pcap_extractor': 'acquisition.pcap_extractor',
-            
+            'usbpcap_conversation': 'acquisition.usbpcap_conversation',
+
             'framing_scanner': 'framing.framing_scanner',
             'packet_finder': 'framing.packet_finder',
             'checksum_cracker': 'framing.checksum_cracker',

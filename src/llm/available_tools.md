@@ -22,6 +22,9 @@ Use these tools by outputting the corresponding JSON function call.
 - **pcap_extractor**
   - *Description*: Extracts serial stream from USBPcap file.
   - *Arguments*: "<pcap_file>"
+- **usbpcap_conversation**
+  - *Description*: Rebuilds the ordered, timestamped conversation (host->device / device->host) between a PC app and a USB-serial adapter from a USBPcap capture, and decodes the line settings the app used (baud, 8N1, DTR/RTS, flow control). Strips FTDI status bytes. Writes `<prefix>_timeline.csv`, `<prefix>_H2D.bin`, `<prefix>_D2H.bin`, `<prefix>_summary.json`. Use this instead of pcap_extractor for request/response protocols.
+  - *Arguments*: "<pcap_file> [prefix] [--device BUS:ADDR] [--ftdi auto|on|off] [--gap-ms 5] [--show 40]"
 
 ## Framing Tools
 - **framing_scanner**
