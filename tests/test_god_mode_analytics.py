@@ -7,10 +7,10 @@ import sys
 # Ensure src is in path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src import entropy_analyzer
-from src import semantic_explorer
-from src import packet_reassembler
-from src import lut_detector
+from src.analysis import entropy_analyzer
+from src.analysis import semantic_explorer
+from src.framing import packet_reassembler
+from src.analysis import lut_detector
 # Note: visualization tools like fft_analyzer might be harder to test headlessly via unit tests, 
 # but we can test the calculation logic if extracted. 
 # For now keeping to the pure logic modules.

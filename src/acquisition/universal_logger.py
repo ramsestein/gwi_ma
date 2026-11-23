@@ -6,12 +6,8 @@ import time
 import datetime
 import serial
 import struct
-try:
-    from . import protocol_manager
-    from . import checksum_utils
-except ImportError:
-    import protocol_manager
-    import checksum_utils
+from src.analysis import protocol_manager
+from src.framing import checksum_utils
 
 def get_value(packet, offset, dtype):
     try:
@@ -66,6 +62,12 @@ def run_logger():
     except serial.SerialException as e:
         print(f"Connection failed: {e}")
         return
+
+    # Output files
+    timestamp_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    os.makedirs("results", exist_ok=True)
+    csv_filename = os.path.join("results", f"metrics_{timestamp_str}.csv")
+    wave_filename = os.path.join("results", f"waveforms_{timestamp_str}.csv")
 
     # Session Metadata
     session_id = timestamp_str

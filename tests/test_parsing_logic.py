@@ -5,7 +5,7 @@ import struct
 
 # Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from src.universal_logger import get_value
+from src.acquisition.universal_logger import get_value
 
 class TestParsingLogic(unittest.TestCase):
     def test_get_uint8(self):

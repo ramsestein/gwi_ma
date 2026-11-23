@@ -4,10 +4,7 @@ from collections import Counter
 import sys
 import collections
 from collections import Counter
-try:
-    from . import protocol_manager
-except ImportError:
-    import protocol_manager
+from src.analysis import protocol_manager
 
 def find_periodicity(filename):
     try:

@@ -2,12 +2,8 @@ import sys
 import json
 import collections
 import statistics
-try:
-    from . import protocol_manager
-    from . import checksum_utils
-except ImportError:
-    import protocol_manager
-    import checksum_utils
+from src.analysis import protocol_manager
+from src.framing import checksum_utils
 
 def verify_capture(bin_file, protocol_file=None):
     print(f"--- Capture Verification: {bin_file} ---")
@@ -80,8 +76,7 @@ def verify_capture(bin_file, protocol_file=None):
             if is_valid:
                 valid_packets += 1
                 # Extract Metrics for Stats
-                from .universal_logger import get_value # Reuse extraction logic if possible or reimplement simple one
-                # Reimplementing simple extraction to avoid circular imports or complex deps
+                # Simple extraction reimplemented here to avoid depending on universal_logger
                 for name, m in metrics.items():
                     try:
                         off = m['offset']

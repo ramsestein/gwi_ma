@@ -1,130 +1,94 @@
-import unittest
-from unittest.mock import patch, MagicMock
 import json
-import sys
 import os
 import subprocess
+import sys
+import unittest
+from io import StringIO
+from unittest.mock import MagicMock, patch
 
-# Ensure src is in path
-sys.path.append(os.getcwd())
-try:
-    from src.deepseek_handler import DeepSeekHandler
-except ImportError:
-    pass
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from src.llm import deepseek_agent
+
+
+def llm_reply(content):
+    response = MagicMock()
+    response.json.return_value = {"choices": [{"message": {"content": content}}]}
+    return response
+
 
 class TestDeepSeekAgent(unittest.TestCase):
-    
+
     def setUp(self):
-        # Setup a dummy environment for testing
-        self.handler = DeepSeekHandler()
-        # Inject a dummy key if not present, to pass initialization checks
-        if not self.handler.api_key:
-            self.handler.api_key = "dummy_key_for_testing"
+        self.agent = deepseek_agent.DeepSeekAgent()
+        if not self.agent.api_key:
+            self.agent.api_key = "dummy_key_for_testing"
+        # Keep the agent from writing results/protocol_definition.json during tests.
+        patcher = patch('src.llm.deepseek_agent.protocol_manager.load_protocol', return_value={})
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def test_prompt_consistency(self):
-        """Verify the System Prompt contains critical instructions."""
-        with patch('requests.post') as mock_post:
-            # Mock a valid response
-            mock_response = MagicMock()
-            mock_response.json.return_value = {
-                "choices": [{
-                    "message": {
-                        "content": json.dumps({"reasoning": "test", "is_finished": True})
-                    }
-                }]
-            }
-            mock_post.return_value = mock_response
-            
-            # Call the method
-            context = {"test": "data"}
-            self.handler.ask_deepseek(context)
-            
-            # Inspect what was sent
-            args, kwargs = mock_post.call_args
-            payload = kwargs['json']
-            messages = payload['messages']
-            
-            system_msg = next(m for m in messages if m['role'] == 'system')
-            system_content = system_msg['content']
-            
-            # Assertions on Prompt Content (Updated for case sensitivity)
-            self.assertIn("Expert Protocol Reverse Engineering Agent", system_content)
-            self.assertIn("AVAILABLE TOOLS", system_content)
-            self.assertIn("baud_detector", system_content)
-            self.assertIn("framing_scanner", system_content)
-            self.assertIn("You must respond with a JSON object:", system_content)
-            
-            print("\n[Test] Prompt Consistency Verified.")
+        """The system prompt carries the instructions and every callable tool."""
+        prompt = self.agent.get_system_prompt()
+
+        self.assertIn("[TOOL EXECUTION FORMAT]", prompt)
+        self.assertIn("[AVAILABLE TOOLS REFERENCE]", prompt)
+        self.assertIn("[TOOL LIST FOR JSON CALLS]", prompt)
+        for tool in ("baud_detector", "framing_scanner", "usbpcap_conversation"):
+            self.assertIn(tool, prompt)
 
     def test_tool_execution(self):
-        """Verify that the agent can execute tools via subprocess."""
-        with patch('subprocess.check_output') as mock_exec:
-            mock_exec.return_value = b"Detected Baud: 9600"
-            
-            output = self.handler.run_tool("baud_detector", "COM3")
-            
-            # Verify command construction
-            mock_exec.assert_called_with("python -m src.baud_detector COM3", shell=True, stderr=subprocess.STDOUT)
-            self.assertIn("Detected Baud: 9600", output)
-            print("\n[Test] Tool Execution Verified.")
+        """Tools run as modules under src/ with a timeout."""
+        with patch('subprocess.check_output', return_value=b"Detected Baud: 9600") as mock_exec, \
+             patch('sys.stdout', new_callable=StringIO):
+            output = self.agent.run_tool("baud_detector", "COM3")
+
+        mock_exec.assert_called_with("python -m src.connection.baud_detector COM3",
+                                     shell=True, stderr=subprocess.STDOUT, timeout=60)
+        self.assertIn("Detected Baud: 9600", output)
+        self.assertIn("not found", self.agent.run_tool("no_such_tool", ""))
+
+    def test_every_mapped_tool_exists(self):
+        """Every entry in TOOL_MAP points to a module that exists."""
+        root = os.path.join(os.path.dirname(__file__), '..', 'src')
+        for name, target in self.agent.TOOL_MAP.items():
+            module = target.split()[0]
+            path = os.path.join(root, *module.split('.')) + '.py'
+            self.assertTrue(os.path.exists(path), f"{name} -> {path}")
 
     def test_api_connection_structure(self):
-        """Verify the API Request structure (URL, Headers, Model)."""
-        with patch('requests.post') as mock_post:
-            mock_response = MagicMock()
-            mock_response.json.return_value = {
-                "choices": [{
-                    "message": {
-                        "content": "{}" 
-                    }
-                }]
-            }
-            mock_post.return_value = mock_response
-            
-            self.handler.ask_deepseek({})
-            
-            args, kwargs = mock_post.call_args
-            url = args[0]
-            headers = kwargs['headers']
-            payload = kwargs['json']
-            
-            self.assertEqual(url, "https://api.deepseek.com/chat/completions")
-            self.assertEqual(headers['Authorization'], f"Bearer {self.handler.api_key}")
-            self.assertEqual(payload['model'], "deepseek-chat")
-            self.assertEqual(payload['response_format']['type'], "json_object")
-            
-            print("\n[Test] API Request Structure Verified.")
+        """The API request has the right URL, auth header, model and messages."""
+        self.agent.history = [{"role": "user", "content": "hello"}]
+        with patch('src.llm.deepseek_agent.requests.post', return_value=llm_reply("hi")) as mock_post, \
+             patch('sys.stdout', new_callable=StringIO):
+            reply = self.agent.call_llm()
 
-    def test_agent_logic_parsing(self):
-        """Verify the Agent correctly parses the JSON response."""
-        
-        # Simulate a response where Agent decides to run baud_detector
-        agent_response = {
-            "reasoning": "We need to find the speed first.",
-            "next_tool": "baud_detector",
-            "arguments": "COM3",
-            "is_finished": False
-        }
-        
-        with patch('requests.post') as mock_post:
-            mock_response = MagicMock()
-            mock_response.json.return_value = {
-                "choices": [{
-                    "message": {
-                        "content": json.dumps(agent_response)
-                    }
-                }]
-            }
-            mock_post.return_value = mock_response
-            
-            context = {}
-            plan = self.handler.ask_deepseek(context)
-            
-            self.assertEqual(plan['next_tool'], "baud_detector")
-            self.assertEqual(plan['arguments'], "COM3")
-            self.assertFalse(plan['is_finished'])
-            
-            print("\n[Test] Agent Logic Parsing Verified.")
+        self.assertEqual(reply, "hi")
+        args, kwargs = mock_post.call_args
+        self.assertEqual(args[0], "https://api.deepseek.com/chat/completions")
+        self.assertEqual(kwargs['headers']['Authorization'], f"Bearer {self.agent.api_key}")
+        self.assertEqual(kwargs['json']['model'], "deepseek-chat")
+        messages = kwargs['json']['messages']
+        self.assertEqual(messages[0]['role'], "system")
+        self.assertEqual(messages[1:], [{"role": "user", "content": "hello"}])
+
+    def test_agent_logic_runs_requested_tool(self):
+        """A tool call in the reply is executed and its output goes back to the LLM."""
+        tool_call = json.dumps({"type": "function",
+                                "function": {"name": "baud_detector", "parameters": "COM3"}})
+        replies = [llm_reply(f"Let me check.\n```json\n{tool_call}\n```"),
+                   llm_reply("The device runs at 9600 baud.")]
+
+        with patch('src.llm.deepseek_agent.requests.post', side_effect=replies), \
+             patch.object(self.agent, 'run_tool', return_value="Detected Baud: 9600") as mock_tool, \
+             patch('sys.stdout', new_callable=StringIO):
+            self.agent.chat_round("What is the baud rate on COM3?")
+
+        mock_tool.assert_called_once_with("baud_detector", "COM3")
+        self.assertEqual(self.agent.history[-2], {"role": "user", "content": "Tool Output:\nDetected Baud: 9600"})
+        self.assertEqual(self.agent.history[-1], {"role": "assistant", "content": "The device runs at 9600 baud."})
+
 
 if __name__ == '__main__':
     unittest.main()

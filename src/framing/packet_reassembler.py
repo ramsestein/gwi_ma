@@ -1,9 +1,6 @@
 import sys
 import collections
-try:
-    from . import protocol_manager
-except ImportError:
-    import protocol_manager
+from src.analysis import protocol_manager
 
 def analyze_fragmentation(bin_file, protocol_file=None):
     print(f"--- Fragmentation Analysis: {bin_file} ---")

@@ -8,11 +8,11 @@ from unittest.mock import MagicMock, patch
 # Ensure src is in path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src import stat_analyzer
-from src import ai_explorer
-from src import checksum_cracker
-from src import crypto_scanner
-from src import complex_protocol
+from src.analysis import stat_analyzer
+from src.analysis import ai_explorer
+from src.framing import checksum_cracker
+from src.security import crypto_scanner
+from src.security import complex_protocol
 
 class TestSingularityFeatures(unittest.TestCase):
 
@@ -20,8 +20,10 @@ class TestSingularityFeatures(unittest.TestCase):
         self.tmp_file = "test_singularity.bin"
     
     def tearDown(self):
-        if os.path.exists(self.tmp_file):
-            os.remove(self.tmp_file)
+        # stat_analyzer also writes <capture>_autocorr.png next to the capture
+        for path in (self.tmp_file, self.tmp_file + "_autocorr.png"):
+            if os.path.exists(path):
+                os.remove(path)
 
     def capture_stdout(self, func, *args):
         captured = StringIO()

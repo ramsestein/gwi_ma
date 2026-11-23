@@ -1,10 +1,7 @@
 import json
 import datetime
 import os
-try:
-    from . import protocol_manager
-except ImportError:
-    import protocol_manager
+from src.analysis import protocol_manager
 
 def generate_markdown_doc(output_file="Protocol_Spec.md"):
     proto = protocol_manager.load_protocol()

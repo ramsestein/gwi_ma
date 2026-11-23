@@ -6,7 +6,7 @@ import sys
 
 # Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from src import protocol_manager
+from src.analysis import protocol_manager
 
 class TestProtocolManager(unittest.TestCase):
     def setUp(self):

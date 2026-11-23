@@ -24,14 +24,14 @@ class TestPacketFinder(unittest.TestCase):
             os.remove(self.test_file)
 
     @patch('builtins.input', return_value='S') # Mock user input to Skip
-    @patch('src.protocol_manager.load_protocol')
+    @patch('src.analysis.protocol_manager.load_protocol')
     def test_find_periodicity_runs(self, mock_load, mock_input):
         mock_load.return_value = {'packet_structure': {'header': None}}
         
         # We just want to ensure it runs without crashing and finds the pattern
         # Since packet_finder prints to stdout, capturing output would be ideal but 
         # for this simple test we just check execution.
-        from src import packet_finder
+        from src.framing import packet_finder
         
         # Redirect stdout to suppress print
         from io import StringIO

@@ -6,14 +6,14 @@ from unittest.mock import MagicMock, patch
 # Ensure src is in path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src import baud_detector
-from src import framing_scanner
-from src import capture_verifier
+from src.connection import baud_detector
+from src.framing import framing_scanner
+from src.utils import capture_verifier
 
 class TestGodModeScanners(unittest.TestCase):
 
-    @patch('src.baud_detector.serial.Serial')
-    @patch('src.baud_detector.time.sleep') # Skip sleep
+    @patch('src.connection.baud_detector.serial.Serial')
+    @patch('src.connection.baud_detector.time.sleep') # Skip sleep
     def test_baud_detector(self, mock_sleep, mock_serial_cls):
         # Mock Serial instance
         mock_ser = MagicMock()
@@ -88,7 +88,7 @@ class TestGodModeScanners(unittest.TestCase):
         
         try:
             # We mock protocol_manager.load_protocol to return something basic
-            with patch('src.protocol_manager.load_protocol') as mock_load:
+            with patch('src.analysis.protocol_manager.load_protocol') as mock_load:
                 mock_load.return_value = {
                     "packet_structure": {
                         "header": "44415441", # "DATA" in hex

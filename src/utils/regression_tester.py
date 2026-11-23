@@ -1,12 +1,8 @@
 import sys
 import os
 import json
-try:
-    from . import capture_verifier
-    from . import universal_logger
-except ImportError:
-    # Quick fix for running partial tests
-    pass
+from src.utils import capture_verifier
+from src.acquisition import universal_logger
 
 def run_regression_suite(test_dir):
     print(f"--- Regression Test Suite: {test_dir} ---")

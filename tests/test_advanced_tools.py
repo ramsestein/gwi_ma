@@ -8,10 +8,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 class TestAdvancedTools(unittest.TestCase):
     
-    @patch('src.command_fuzzer.serial.Serial')
-    @patch('src.command_fuzzer.time.sleep') # Skip sleep
+    @patch('src.simulation.command_fuzzer.serial.Serial')
+    @patch('src.simulation.command_fuzzer.time.sleep') # Skip sleep
     def test_fuzzer_sends_payloads(self, mock_sleep, mock_serial_cls):
-        from src import command_fuzzer
+        from src.simulation import command_fuzzer
         
         mock_ser = MagicMock()
         mock_serial_cls.return_value = mock_ser
@@ -28,7 +28,7 @@ class TestAdvancedTools(unittest.TestCase):
         self.assertIn(b'HELLO\r', call_args)
 
     def test_bit_analyzer_logic(self):
-        from src import bit_analyzer
+        from src.analysis import bit_analyzer
         from io import StringIO
         
         # Create dummy data: 2 bytes, 10 samples
@@ -53,10 +53,10 @@ class TestAdvancedTools(unittest.TestCase):
             # Should check for bit representation
             self.assertIn("00000001", output)
 
-    @patch('src.timing_analyzer.serial.Serial')
-    @patch('src.timing_analyzer.time.time')
+    @patch('src.utils.timing_analyzer.serial.Serial')
+    @patch('src.utils.timing_analyzer.time.time')
     def test_timing_analyzer_gaps(self, mock_time, mock_serial_cls):
-        from src import timing_analyzer
+        from src.utils import timing_analyzer
         from io import StringIO
         
         mock_ser = MagicMock()
