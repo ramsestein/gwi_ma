@@ -4,20 +4,23 @@ Toolkit to reverse engineer serial protocols of medical devices (see README.md).
 
 ## Current project: BIS VISTA → Masimo bridge
 
-A Raspberry Pi sits between a BIS VISTA monitor and a Masimo concentrator. It
-talks the BIS binary protocol (which carries the raw EEG), emulates the BIS ASCII
-output towards Masimo, and forwards the EEG to a research PC. The binary protocol
-is learnt by observing VitalRecorder talking to the BIS. Plan, phases and open
-decisions: `docs/plan_puente_bis.md`. Read it before working on this project.
+A Raspberry Pi acts as a translator with three USB-RS232 ports: port 1 talks the
+BIS binary protocol (which carries the raw EEG) as the BIS host; port 2 emulates
+the BIS ASCII output towards a Masimo concentrator; port 3 emulates a BIS in Vista
+Binary so VitalRecorder on a research PC records the EEG (or, simpler, the EEG
+goes out over Ethernet). Plan, phases and open decisions:
+`docs/plan_puente_bis.md`. Read it before working on this project.
 
 Key decisions so far:
-- The two sides of the bridge are decoupled: the Pi keeps its own binary session
-  with the BIS and answers Masimo from the latest values. No request-by-request
-  translation.
-- Learn ASCII first with a passive tap (RX-only adapters, TX unconnected) before
-  touching anything.
+- The Pi is the only host of the BIS. Ports 2 and 3 are served from the Pi's
+  latest data; no request-by-request translation, so Masimo never depends on the
+  research PC.
+- Protocols are learnt with only a PC and the BIS (no Masimo yet): ASCII by
+  logging what the BIS emits, binary by capturing VitalRecorder's USB traffic.
 - VitalRecorder `.vital` files are the ground truth for decoding.
 - Which binary mode (Vista Binary or Legacy Binary) is still to be decided.
+- Masimo acceptance of the emulated ASCII is validated only once a Masimo unit
+  is available.
 
 ## Working model
 
