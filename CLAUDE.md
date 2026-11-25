@@ -7,8 +7,8 @@ Toolkit to reverse engineer serial protocols of medical devices (see README.md).
 A Raspberry Pi acts as a translator with three USB-RS232 ports: port 1 talks the
 BIS binary protocol (which carries the raw EEG) as the BIS host; port 2 emulates
 the BIS ASCII output towards a Masimo concentrator; port 3 emulates a BIS in Vista
-Binary so VitalRecorder on a research PC records the EEG (or, simpler, the EEG
-goes out over Ethernet). Plan, phases and open decisions:
+Binary so the research PCs keep their current VitalRecorder setup (decided).
+Captures are done on a Windows PC with VitalRecorder and Wireshark + USBPcap. Plan, phases and open decisions:
 `docs/plan_puente_bis.md`. Read it before working on this project.
 
 Key decisions so far:

@@ -19,6 +19,15 @@ Use these tools by outputting the corresponding JSON function call.
 - **data_logger**
   - *Description*: Logs binary data to file.
   - *Arguments*: "<port> <baud>"
+- **serial_ports**
+  - *Description*: Lists USB-serial adapters (VID:PID, serial number, USB socket) and prints udev rules for fixed names.
+  - *Arguments*: "" or "--udev ROLE=DEVICE [ROLE=DEVICE ...]"
+- **serial_loopback**
+  - *Description*: Loopback test between two ports joined by a null-modem cable: lost/corrupted frames and latency.
+  - *Arguments*: "<port_a> <port_b> --baud 57600 [--sweep 9600,57600] [--both]"
+- **serial_tap** (interactive, run it manually, not as a tool call)
+  - *Description*: Timestamped capture of one or two ports: passive tap (never writes) or --bridge (forwards between them). Writes `<prefix>_timeline.csv`, `<prefix>_<NAME>.bin`, `<prefix>_summary.json`.
+  - *Arguments*: "<port> [port2] --baud N [--names BIS,MASIMO] [--bridge] [--prefix dumps/x]"
 - **pcap_extractor**
   - *Description*: Extracts serial stream from USBPcap file.
   - *Arguments*: "<pcap_file>"

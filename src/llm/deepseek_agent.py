@@ -57,6 +57,8 @@ class DeepSeekAgent:
             'complex_protocol': 'security.complex_protocol',
             
             'timing_analyzer': 'utils.timing_analyzer',
+            'serial_ports': 'utils.serial_ports',
+            'serial_loopback': 'utils.serial_loopback',
             'web_search': 'utils.web_client search',
             'web_read': 'utils.web_client read',
             'update_knowledge': 'llm.knowledge_manager update',
