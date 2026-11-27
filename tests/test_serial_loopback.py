@@ -7,11 +7,20 @@ from contextlib import redirect_stdout
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from pty_link import NullModem
+from pty_link import LoopbackPlug, NullModem
 from src.utils import serial_loopback as sl
 
 
 class TestSerialLoopback(unittest.TestCase):
+
+    def test_single_adapter_with_loopback_plug(self):
+        plug = LoopbackPlug()
+        try:
+            results = sl.run_loopback(plug.path, plug.path, [9600, 115200], frames=10, size=8, both=True)
+        finally:
+            plug.close()
+        self.assertEqual([(r["baud"], r["direction"]) for r in results], [(9600, "echo"), (115200, "echo")])
+        self.assertTrue(all(r["ok"] == 10 for r in results))
 
     def test_frames_cross_a_null_modem_intact(self):
         link = NullModem()

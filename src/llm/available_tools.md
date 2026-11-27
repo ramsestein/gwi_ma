@@ -19,6 +19,9 @@ Use these tools by outputting the corresponding JSON function call.
 - **data_logger**
   - *Description*: Logs binary data to file.
   - *Arguments*: "<port> <baud>"
+- **check_setup**
+  - *Description*: Checks that this machine is ready (Python, packages, git, Wireshark/USBPcap/VitalRecorder on Windows, serial access on the Pi, adapters).
+  - *Arguments*: "[--role pc|pi]"
 - **serial_ports**
   - *Description*: Lists USB-serial adapters (VID:PID, serial number, USB socket) and prints udev rules for fixed names.
   - *Arguments*: "" or "--udev ROLE=DEVICE [ROLE=DEVICE ...]"

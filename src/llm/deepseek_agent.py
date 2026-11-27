@@ -59,6 +59,7 @@ class DeepSeekAgent:
             'timing_analyzer': 'utils.timing_analyzer',
             'serial_ports': 'utils.serial_ports',
             'serial_loopback': 'utils.serial_loopback',
+            'check_setup': 'utils.check_setup',
             'web_search': 'utils.web_client search',
             'web_read': 'utils.web_client read',
             'update_knowledge': 'llm.knowledge_manager update',

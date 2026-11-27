@@ -6,8 +6,12 @@ Sends numbered frames from port A and checks that they arrive intact on port B
 latency compared with the time the bytes need on the wire. Use it to check
 adapters, cables and timing before connecting any device.
 
+With a single adapter, join pins 2 (RX) and 3 (TX) of its DB-9 with a wire and
+give the same port twice: every frame comes back as an echo.
+
 Usage:
   python -m src.utils.serial_loopback PORT_A PORT_B --baud 57600
+  python -m src.utils.serial_loopback COM3 COM3 --baud 57600      (one adapter, pins 2-3 joined)
       [--sweep 9600,19200,57600,115200] [--frames 200] [--size 32]
       [--both] [--format 8N1] [--timeout 1.0]
 """
@@ -86,21 +90,23 @@ def one_direction(tx, rx, baud: int, fmt: str, frames: int, size: int, timeout: 
 def run_loopback(port_a: str, port_b: str, bauds: List[int], frames: int = 200, size: int = 32,
                  both: bool = False, fmt: str = "8N1", timeout: float = 1.0,
                  opener=open_port) -> List[Dict]:
+    single = port_a == port_b  # one adapter with pins 2 and 3 joined (loopback plug)
     results = []
     for baud in bauds:
         a = opener(PortSpec("A", port_a, baud, fmt), timeout=0.05)
-        b = opener(PortSpec("B", port_b, baud, fmt), timeout=0.05)
+        b = a if single else opener(PortSpec("B", port_b, baud, fmt), timeout=0.05)
         try:
             r = one_direction(a, b, baud, fmt, frames, size, timeout)
-            r["direction"] = "A->B"
+            r["direction"] = "echo" if single else "A->B"
             results.append(r)
-            if both:
+            if both and not single:
                 r = one_direction(b, a, baud, fmt, frames, size, timeout)
                 r["direction"] = "B->A"
                 results.append(r)
         finally:
             a.close()
-            b.close()
+            if not single:
+                b.close()
     return results
 
 

@@ -124,39 +124,42 @@ en el PC de análisis).
 
 ## Fases
 
-### Fase 0: preparación, sin BIS
+El traductor se escribe en Python con `pyserial`, así que el mismo código funciona
+en Windows (prototipo, fase 3) y en la Pi (fase 4).
 
-- [x] Pi accesible por SSH con clave (`ssh bisbridge`).
-- [ ] En la Pi: `pi/setup.sh` (git, venv, `pyserial`, grupo `dialout`, repo).
-- [ ] Reglas udev con `serial_ports` para nombres fijos de los adaptadores
-      (`/dev/ttyBIS`, `/dev/ttyMASIMO`, `/dev/ttyRESEARCH`).
-- [ ] Prueba en bucle en la Pi con `serial_loopback`: dos adaptadores unidos por
-      null-modem, a varias velocidades. Sin tramas perdidas y con retardos medidos.
-- [ ] PC Windows listo: VitalRecorder, Wireshark + USBPcap, y Python con `pyserial`
-      para `serial_tap`.
-- [ ] Comprar el material que falte y lanzar las gestiones.
+### Fase 0: preparación
 
-### Fase 1: captura con el PC y el BIS solos (banco)
+**PC Windows** (guía paso a paso en `docs/preparar_windows.md`):
+- [ ] Python, git y el repo, con las dependencias.
+- [ ] Wireshark con USBPcap.
+- [ ] VitalRecorder.
+- [ ] Adaptador USB-RS232 reconocido como puerto COM, sin suspensión USB, y si es
+      FTDI, con latencia de 1 ms.
+- [ ] `check_setup` sin fallos.
+- [ ] Ensayo sin BIS: prueba en bucle con captura USBPcap, y
+      `usbpcap_conversation` reconstruye las dos direcciones.
 
-Montaje: BIS ⇄ cable ⇄ adaptador USB-RS232 ⇄ PC. Una sesión por modo del puerto
-serie del BIS.
+**Pi:**
+- [x] Accesible por SSH con clave (`ssh bisbridge`).
+- [ ] `pi/setup.sh` (git, venv, `pyserial`, grupo `dialout`, repo).
+- [ ] Reglas udev con `serial_ports` (`/dev/ttyBIS`, `/dev/ttyMASIMO`, `/dev/ttyRESEARCH`).
+- [ ] `serial_loopback` entre dos adaptadores, a varias velocidades.
 
-**1a. ASCII, con `serial_tap`** (un solo puerto, en modo escucha). VitalRecorder no
-lee el ASCII del BIS, así que no se usa aquí.
+**Material y gestiones:** comprar lo que falte y lanzar las consultas a Medtronic,
+Masimo y Electromedicina.
 
-- Primera pregunta: **¿el BIS emite ASCII por sí solo o espera una petición?**
-  - Si emite solo, Masimo solo escucha y basta con reproducir exactamente lo que
-    sale del BIS.
-  - Si no emite nada, el ASCII es por petición. Necesitaremos la especificación o
-    a Masimo para saber qué pedir.
-- Velocidad: con `baud_detector`.
-- Registrar todos los estados del BIS (lista de abajo) y anotar los eventos.
+### Fase 1: el BIS conectado al PC, en cada modo
 
-**1b. Vista Binary y 1c. Legacy Binary, con VitalRecorder y la captura USB.**
+Montaje: BIS ⇄ cable ⇄ adaptador USB-RS232 ⇄ PC Windows. Una sesión por modo del
+puerto serie del BIS: **ASCII**, **Vista Binary** y **Legacy Binary**.
 
 - **Arrancar Wireshark antes de abrir el puerto en VitalRecorder**, para tener la
   configuración del puerto y el arranque del protocolo.
-- Ver en cuál de los dos modos recibe VitalRecorder la curva de EEG.
+- Si VitalRecorder no recibe datos en ASCII, capturar el ASCII con `serial_tap`.
+  Un puerto COM no se puede abrir desde dos programas a la vez.
+- Preguntas a responder:
+  - ¿el BIS emite ASCII por sí solo o espera una petición?
+  - ¿en qué modo binario recibe VitalRecorder la curva de EEG?
 
 **Estados a recorrer en cada modo** (sesiones de 30 minutos o más):
 - el BIS arranca con el PC ya conectado;
@@ -165,68 +168,67 @@ lee el ASCII del BIS, así que no se usa aquí.
 - el PC se desconecta y se vuelve a conectar;
 - el BIS se reinicia (¿conserva el modo del puerto?).
 
-**Guardar de cada sesión:** captura (`.pcapng` o `.bin`), `.vital` en los modos
-binarios, y notas con las horas de cada evento. Si la exportación USB del BIS
-funciona a la vez que el puerto serie, exportar también los `.spa`/`.r2a`: dan
-los valores procesados en paralelo y sirven para cruzar el ASCII con el binario.
+**Guardar de cada sesión:** el `.pcapng`, el `.vital` y notas con las horas de cada
+evento. Si la exportación USB del BIS funciona a la vez que el puerto serie,
+exportar también los `.spa`/`.r2a`: dan los valores procesados en paralelo y
+sirven para cruzar el ASCII con el binario.
 
-**Sale cuando** tenemos sesiones completas de los tres modos en todos los estados
-y sabemos qué modo binario lleva la curva.
+**Sale cuando** tenemos sesiones completas de los tres modos en todos los estados.
 
-### Fase 2: ingeniería inversa
+### Fase 2: sacar los protocolos, en el PC
 
-1. ASCII: campos, separadores, cadencia y cómo marca cada estado. Si la
+1. `usbpcap_conversation`: la conversación ordenada y la configuración del puerto
+   de cada sesión.
+2. ASCII: campos, separadores, cadencia y cómo marca cada estado. Si la
    exportación USB funcionó en paralelo, el `.spa` dice qué es cada columna.
-2. Binario:
-   - `usbpcap_conversation` da la conversación;
+3. Binario:
    - `framing_scanner`, `packet_finder` y `checksum_cracker` dan las tramas y el
      checksum;
    - comandos del host: qué envía VitalRecorder, en qué orden y con qué cadencia;
    - tipos de trama del BIS: procesados, EEG, estados y errores;
    - `vital_correlator`: dónde va cada valor y su escala, usando el `.vital` como
      referencia.
-3. Definición de los protocolos y decodificador.
+4. Definición de los protocolos y decodificador.
 
 **Sale cuando** el decodificador reproduce las muestras de EEG y los valores
 procesados del `.vital` en todas las sesiones, y entendemos todos los mensajes
 de los dos lados.
 
-### Fase 3: emulación en banco, con la Pi
+### Fase 3: prototipo del traductor en el PC Windows (BIS ⇄ PC ⇄ Masimo)
 
-- **Puerto 1:** la Pi hace de host del BIS y recibe los mismos datos que recibía
-  VitalRecorder.
-- **Puerto 2:** el emulador ASCII, conectado a un PC que registra, produce lo mismo
-  que el BIS real en la fase 1a, estado por estado y byte a byte en el formato.
-- **Puerto 3:** VitalRecorder, conectado a la Pi, registra la curva como si
-  estuviera conectado al BIS.
-- Simulador de BIS para probar la Pi sin monitor.
+Necesita un Masimo. Mientras no llegue, en su lugar va otro puerto que registra
+lo que le enviamos, comparado con el ASCII real de la fase 1.
 
-**Sale cuando** el ASCII generado no se distingue del real y VitalRecorder no nota
-la diferencia en el puerto 3.
+1. **Primero, escuchar.** `serial_tap` con la Y (dos adaptadores solo-RX) sobre el
+   cable BIS ⇄ Masimo, con el BIS en ASCII. ¿Masimo envía algo?, ¿qué velocidad y
+   formato usa?
+2. **Después, el traductor.** El BIS va en binario y el PC hace de host. Hacia
+   Masimo, el PC emula el ASCII. Comprobamos qué capturamos del BIS y qué
+   devolvemos a Masimo.
 
-### Fase 4: traductor completo en banco
+**Sale cuando** Masimo muestra y registra el BIS igual que con conexión directa,
+en todos los estados.
 
-- Montaje: BIS ⇄ Pi ⇄ (PC que registra el ASCII, en lugar de Masimo) y Pi ⇄
-  VitalRecorder.
-- Servicio systemd, watchdog hardware, sistema de ficheros de solo lectura, sin
-  internet.
-- Modo "pasar tal cual" si llega ASCII desde el BIS.
+### Fase 4: el traductor en la Pi, con el tercer puerto
+
+- Mismo código que en la fase 3, en la Pi: puerto 1 al BIS y puerto 2 a Masimo.
+- **Puerto 3 al PC con VitalRecorder:** la Pi emula al BIS en modo binario y
+  VitalRecorder captura la curva como si estuviera conectado al monitor.
+- Servicio systemd, watchdog, modo "pasar tal cual" si llega ASCII desde el BIS.
+
+**Sale cuando** Masimo y VitalRecorder reciben a la vez lo mismo que con conexión
+directa.
+
+### Fase 5: pruebas en banco
+
 - Pruebas de duración: 72 horas.
 - Fallos provocados:
-  - desconectar el BIS, el sensor o cualquiera de los PCs;
+  - desconectar el BIS, el sensor, Masimo o el PC de VitalRecorder;
   - reiniciar la Pi y el BIS;
   - que el BIS vuelva a ASCII.
 - Medir el retardo extremo a extremo.
+- Imagen de la Pi con sistema de ficheros de solo lectura y sin internet.
 - Procedimiento de vuelta atrás: cable directo y BIS a ASCII.
-
-### Fase 5: validación con Masimo, cuando llegue
-
-- Primero, escucha pasiva con `serial_tap` y la Y (dos adaptadores solo-RX) del
-  BIS real hablando con Masimo: ¿Masimo envía algo?, ¿qué velocidad y formato usa?
-- Si hace falta, `serial_tap --bridge` en el PC Windows o en la Pi, para probar
-  qué acepta Masimo antes de conectar el traductor.
-- Después, Masimo conectado al puerto 2: muestra y registra el BIS igual que con
-  conexión directa, en todos los estados y en las pruebas de fallo.
 
 ### Fase 6: validación y paso a clínica
 
@@ -238,15 +240,18 @@ la diferencia en el puerto 3.
 
 ## Decisiones tomadas
 
-- Puerto 3 en Vista Binary, para no cambiar nada en los ordenadores de investigación.
-- PC de captura con Windows (VitalRecorder + Wireshark con USBPcap).
+- El puerto 3 emula el modo binario que ya usan los ordenadores de investigación
+  con VitalRecorder, para no cambiar nada en ellos.
+- PC de captura y de prototipo con Windows (VitalRecorder + Wireshark con USBPcap).
+- El traductor se prototipa en Windows y luego pasa a la Pi, con el mismo código.
 
 ## Decisiones abiertas
 
 | Decisión | Se resuelve en |
 | :--- | :--- |
-| ¿El BIS emite ASCII por sí solo o espera una petición? | Fase 1a |
-| Vista Binary o Legacy Binary para el puerto 1 (cuál lleva la EEG y cuál decodificamos) | Fase 1b/1c |
-| ¿Acepta el driver de Masimo el ASCII emulado? | Fase 5 |
+| ¿El BIS emite ASCII por sí solo o espera una petición? | Fase 1 |
+| ¿En qué modo binario recibe VitalRecorder la curva? | Fase 1 |
+| Modo binario del puerto 1 (BIS) y del puerto 3 (VitalRecorder): Vista Binary o Legacy Binary | Fase 1 |
+| ¿Acepta el driver de Masimo el ASCII emulado? | Fase 3 |
 | Modelo de adaptador aislado | Fase 0 |
 | ¿El USB tipo B del BIS da algo útil en paralelo? | Respuesta de Medtronic |

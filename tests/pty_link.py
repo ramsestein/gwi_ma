@@ -38,6 +38,32 @@ class PtyPort:
                 pass
 
 
+class LoopbackPlug(PtyPort):
+    """A single port whose TX is wired back to its RX (pins 2 and 3 joined)."""
+
+    def __init__(self):
+        super().__init__()
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._echo, daemon=True)
+        self._thread.start()
+
+    def _echo(self):
+        while not self._stop.is_set():
+            ready, _, _ = select.select([self.master], [], [], 0.05)
+            if ready:
+                try:
+                    data = os.read(self.master, 4096)
+                except OSError:
+                    return
+                if data:
+                    os.write(self.master, data)
+
+    def close(self):
+        self._stop.set()
+        self._thread.join(timeout=1)
+        super().close()
+
+
 class NullModem:
     """Joins two PtyPorts like a null-modem cable: bytes written to one port
     arrive at the other. `mutate` can alter bytes in transit to inject faults."""
